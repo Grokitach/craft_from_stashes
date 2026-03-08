@@ -2,9 +2,6 @@
 
 <string_table>
 	
-    <string id="ui_mcm_craft_from_stashes_title">
-		<text>Craft From Stashes</text>
-	</string>
     <string id="ui_mcm_menu_craft_from_stashes">
 		<text>Craft From Stashes</text>
 	</string>
