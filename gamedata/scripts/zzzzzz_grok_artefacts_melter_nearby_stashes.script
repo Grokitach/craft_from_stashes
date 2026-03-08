@@ -53,6 +53,9 @@ function on_game_start()
 				end, stash_range)
 			end
 
+			printf("! [DEBUG] Melter n=1: found %s artifacts, disable_stack=%s, repair_only=%s", size_t, tostring(self.CC[1].disable_stack), tostring(self.repair_only ~= nil))
+			self.CC[1].disable_stack = true
+			printf("! [DEBUG] Melter n=1: disable_stack after set=%s", tostring(self.CC[1].disable_stack))
 			self.CC[1]:Reinit(inv)
 
 		-- Compatible material list to use
@@ -63,7 +66,6 @@ function on_game_start()
 			end
 
 			local inf = {}
-			local ItemListSec_2 = {}  -- to show only one copy of bonus items
 
 			local function search_materials(owner, obj)
 				local sec = obj:section()
@@ -78,26 +80,21 @@ function on_game_start()
 						strengthen = "weak"
 					end
 
-					if (not ItemListSec_2[sec]) and (obj) and (obj:id() ~= obj_s:id()) and (obj:id() ~= self.obj:id()) then
-						ItemListSec_2[sec] = true
+					if (obj) and (obj:id() ~= obj_s:id()) and (obj:id() ~= self.obj:id()) then
+						local bonus
+						if (self.parts_match and sec == obj_s:section()) or (self.parts_sections and self.parts_sections[sec]) then
+							local obj_con = obj:condition()
+							if strengthen == "strong" then
+								bonus = math.floor(obj_con * 100, 0, 98)
+							else
+								bonus = math.floor(obj_con * 100 / 3, 0, 98)
+							end
+						end
 
-						if (self.parts_match and sec == obj_s:section()) then
+						if bonus then
 							size_t = size_t + 1
 							inv[size_t] = obj
-							if strengthen == "strong" then
-								inf[size_t] = math.floor(obj:condition() * 100, 0, 98)
-							else
-								inf[size_t] = math.floor(obj:condition() * 100 / 3, 0, 98)
-							end
-
-						elseif (self.parts_sections and self.parts_sections[sec]) then
-							size_t = size_t + 1
-							inv[size_t] = obj
-							if strengthen == "strong" then
-								inf[size_t] = math.floor(obj:condition() * 100, 0, 98)
-							else
-								inf[size_t] = math.floor(obj:condition() * 100 / 3, 0, 98)
-							end
+							inf[size_t] = bonus
 						end
 					end
 				end
@@ -111,6 +108,7 @@ function on_game_start()
 				IterateStashesInRange(search_materials, stash_range)
 			end
 
+			self.CC[2].disable_stack = true
 			self.CC[2]:Reinit(inv, inf)
 
 			local fnt = GetFontSmall()
@@ -122,5 +120,39 @@ function on_game_start()
 				end
 			end
 		end
+	end
+
+	-- Patch OnRepair to reinit both panels after empowerment
+	-- Delayed to allow alife_release to propagate before rescanning stashes
+	local original_OnRepair = grok_artefacts_melter.UIRepair.OnRepair
+	function grok_artefacts_melter.UIRepair:OnRepair()
+		-- Save empowered artifact id before original resets the UI
+		local obj_1 = self.CC[1]:GetCell_Selected(true)
+		local empowered_id = obj_1 and obj_1:id()
+		original_OnRepair(self)
+		local self_ref = self
+		CreateTimeEvent("melter_reinit", "melter_reinit", 0.1, function()
+			if not (self_ref and self_ref:IsShown()) then return true end
+			-- Rescan stashes and reinit CC[1] (left panel - artifacts to empower)
+			self_ref:InitInventory(1)
+			-- Find and select the empowered artifact by id, fallback to first
+			local target_idx = nil
+			for idx, ci in pairs(self_ref.CC[1].cell) do
+				if ci:IsShown() then
+					if ci.ID == empowered_id then
+						target_idx = idx
+						break
+					elseif not target_idx then
+						target_idx = idx
+					end
+				end
+			end
+			if target_idx then
+				self_ref.CC[1]:On_Select(target_idx)
+				-- Rescan stashes and reinit CC[2] (right panel - materials)
+				self_ref:InitInventory(2)
+			end
+			return true
+		end)
 	end
 end
