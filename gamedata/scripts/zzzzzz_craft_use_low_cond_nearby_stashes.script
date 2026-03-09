@@ -18,19 +18,19 @@ function on_game_start()
 		-- Get stash range from MCM
 		local stash_range = ui_mcm and ui_mcm.get("craft_from_stashes/range") or 10
 
-		-- Track which items we've already processed to avoid re-processing
-		self._already_processed = self._already_processed or {}
+		-- Reset stash artifact condition data (read by zz_ui_workshop_keep_crafting_window_open)
+		self._stash_arty_total_cond = 0
+		self._stash_arty_counter = 0
+		self._stash_arty_randomize = 0
 
 		for idx,_ in pairs(self.craft_item) do
-			-- Skip if already processed by us
-			if self._already_processed[idx] then
-				goto continue
-			end
 			local sec
 
 			-- Save item section if it's degradable
-			local item = level.object_by_id(self.craft_item[idx][1])
-			if item and utils_item.is_degradable(item) then
+			local first_id = self.craft_item[idx][1]
+			local item = first_id and level.object_by_id(first_id)
+			local degradable = item and utils_item.is_degradable(item)
+			if degradable then
 				sec = item:section()
 			end
 
@@ -81,32 +81,32 @@ function on_game_start()
 
 					local parent = item_parents[id]
 					if parent then
-						-- Item is in stash - delete it now, but still add to craft_item
-						-- so base_craft knows to create the result item
+						-- Item is in stash: save artifact condition data before releasing
+						-- (zz_ui_workshop_keep_crafting_window_open reads self._stash_arty_* to set result condition)
+						local kind = SYS_GetParam(0, sec, "kind")
+						if kind == "i_arty" then
+							self._stash_arty_total_cond = self._stash_arty_total_cond + cond
+							self._stash_arty_counter = self._stash_arty_counter + 1
+						elseif kind == "i_arty_junk" then
+							self._stash_arty_total_cond = 1
+							self._stash_arty_counter = 1
+							self._stash_arty_randomize = 1
+						end
 						alife_release_id(id)
+					else
+						-- Inventory item: add to craft_item so base_craft releases it
+						self.craft_item[idx][#self.craft_item[idx] + 1] = id
 					end
-
-					-- Always add to craft_item so base_craft creates the result
-					-- For inventory items, base_craft will delete them
-					-- For stash items, they're already deleted above
-					self.craft_item[idx][#self.craft_item[idx] + 1] = id
 
 					counter = counter + 1
 				end
-
-				-- Mark this item as processed so craft_use_low_cond doesn't reprocess it
-				self._already_processed[idx] = true
 			end
-
-			::continue::
 		end
 
-		-- Call craft_use_low_cond's wrapped version
-		-- Items we processed are marked in _already_processed, so they won't be reprocessed
-		craft_use_low_cond_Craft(self)
-
-		-- Clear processed flags for next craft operation
-		self._already_processed = {}
+		-- Call base_craft directly (skips craft_use_low_cond's loop which crashes when craft_item[n] is empty).
+		-- base_craft is set by craft_use_low_cond at game start; fall back to saved reference if not installed.
+		local final_craft = (type(base_craft) == "function") and base_craft or craft_use_low_cond_Craft
+		final_craft(self)
 	end
 end
 
