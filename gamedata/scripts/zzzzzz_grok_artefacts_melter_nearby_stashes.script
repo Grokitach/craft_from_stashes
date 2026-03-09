@@ -52,7 +52,9 @@ function on_game_start()
 					end
 				end, stash_range)
 			end
-
+			-- In items_artefacts.ltx, use_condition is commented out:
+			-- ;use_condition = true
+			-- So FindSimilar sees artifacts as having no condition → stacks all same-section artifacts into one cell. This is engine-level behavior. The fix is to set disable_stack = true on the containers before Reinit
 			printf("! [DEBUG] Melter n=1: found %s artifacts, disable_stack=%s, repair_only=%s", size_t, tostring(self.CC[1].disable_stack), tostring(self.repair_only ~= nil))
 			self.CC[1].disable_stack = true
 			printf("! [DEBUG] Melter n=1: disable_stack after set=%s", tostring(self.CC[1].disable_stack))
