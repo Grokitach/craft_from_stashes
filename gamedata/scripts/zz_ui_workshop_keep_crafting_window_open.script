@@ -1,10 +1,10 @@
 --[[
 	Monkey patch: zz_ui_workshop_keep_crafting_window_open.script (Serious Workshop Optimization)
-	Fixes artifact crafting from nearby stashes
+	Fixes artefact crafting from nearby stashes
 
-	GAR's Craft reads ingredient artifact conditions to set result artifact condition.
+	GAR's Craft reads ingredient artefact conditions to set result artefact condition.
 	When ingredients come from stashes, they're pre-released and not in craft_item,
-	so total_cond=0 and result artifact is never created.
+	so total_cond=0 and result artefact is never created.
 	Fix: seed total_cond/counter/randomize from self._stash_arty_* saved by
 	zzzzzz_craft_use_low_cond_nearby_stashes before the stash items were released.
 --]]
@@ -55,7 +55,7 @@ ui_workshop.UIWorkshopCraft.Craft = function(self)
 
 	-- Remove supportive items
 	local lead_box_number = 0
-	-- Seed with stash artifact conditions saved by zzzzzz_craft_use_low_cond_nearby_stashes
+	-- Seed with stash artefact conditions saved by zzzzzz_craft_use_low_cond_nearby_stashes
 	-- (stash ingredients are pre-released and absent from craft_item)
 	local total_cond = self._stash_arty_total_cond or 0
 	local counter = self._stash_arty_counter or 0

@@ -17,10 +17,10 @@
 	<string id="ui_mcm_craft_from_stashes_cooking_range_desc">
 		<text>Range in meters from the player to search for stashes from which to cook</text>
 	</string>
-    <string id="ui_mcm_craft_from_stashes_artifact_high_priority">
-		<text>Use best artifact for craft</text>
+    <string id="ui_mcm_craft_from_stashes_artefact_high_priority">
+		<text>Use best artefact for craft</text>
 	</string>
-    <string id="ui_mcm_craft_from_stashes_artifact_high_priority_desc">
-		<text>Artifact craft condition high to low priority (except perk artifacts)</text>
+    <string id="ui_mcm_craft_from_stashes_artefact_high_priority_desc">
+		<text>Artefact craft condition high to low priority (except perk artefacts)</text>
 	</string>
 </string_table>
